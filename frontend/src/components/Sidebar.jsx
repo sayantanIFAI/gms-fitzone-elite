@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, NavLink } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import {
   LayoutDashboard, Calendar, Activity, Dumbbell, CreditCard,
@@ -20,39 +20,45 @@ function Avatar({ user, size = 'md' }) {
 
 const NAV = {
   member: [
-    { icon: LayoutDashboard, label: 'My Dashboard',    path: '/dashboard' },
-    { icon: Calendar,        label: 'Classes',          path: '/dashboard' },
-    { icon: Activity,        label: 'Vitals & Cardio',  path: '/dashboard' },
-    { icon: Dumbbell,        label: 'Personal Records', path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'My Dashboard',    path: '/dashboard',          exact: true  },
+    { icon: Calendar,        label: 'Classes',          path: '/dashboard/classes',  exact: false },
+    { icon: Activity,        label: 'Vitals & Cardio',  path: '/dashboard/vitals',   exact: false },
+    { icon: Dumbbell,        label: 'Personal Records', path: '/dashboard/records',  exact: false },
   ],
   trainer: [
-    { icon: LayoutDashboard, label: 'Trainer Hub',      path: '/dashboard' },
-    { icon: Users,           label: 'My Classes',        path: '/dashboard' },
-    { icon: ClipboardList,   label: 'Attendance',        path: '/dashboard' },
-    { icon: Sparkles,        label: 'AI Insights',       path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Trainer Hub',      path: '/dashboard', exact: true },
+    { icon: Users,           label: 'My Classes',        path: '/dashboard', exact: true },
+    { icon: ClipboardList,   label: 'Attendance',        path: '/dashboard', exact: true },
+    { icon: Sparkles,        label: 'AI Insights',       path: '/dashboard', exact: true },
   ],
   admin: [
-    { icon: LayoutDashboard, label: 'Admin Overview',   path: '/dashboard' },
-    { icon: Wrench,          label: 'Equipment',         path: '/dashboard' },
-    { icon: CreditCard,      label: 'Payments',          path: '/dashboard' },
-    { icon: Users,           label: 'Members',           path: '/dashboard' },
-    { icon: Sparkles,        label: 'AI Alerts',         path: '/dashboard' },
+    { icon: LayoutDashboard, label: 'Admin Overview',   path: '/dashboard', exact: true },
+    { icon: Wrench,          label: 'Equipment',         path: '/dashboard', exact: true },
+    { icon: CreditCard,      label: 'Payments',          path: '/dashboard', exact: true },
+    { icon: Users,           label: 'Members',           path: '/dashboard', exact: true },
+    { icon: Sparkles,        label: 'AI Alerts',         path: '/dashboard', exact: true },
   ],
   wellness: [
-    { icon: Heart,           label: 'Wellness',          path: '/dashboard' },
-    { icon: Calendar,        label: 'My Bookings',       path: '/dashboard' },
-    { icon: Sparkles,        label: 'Services',          path: '/dashboard' },
+    { icon: Heart,           label: 'Wellness',          path: '/dashboard', exact: true },
+    { icon: Calendar,        label: 'My Bookings',       path: '/dashboard', exact: true },
+    { icon: Sparkles,        label: 'Services',          path: '/dashboard', exact: true },
   ],
 }
 
 export default function Sidebar() {
   const { user, setUser } = useUser()
   const navigate = useNavigate()
+  const location = useLocation()
 
   if (!user) return null
 
   const navKey = user.role === 'member' && user.id === 'mem_002' ? 'wellness' : user.role
   const navItems = NAV[navKey] || NAV.member
+
+  const isActive = (path, exact) => {
+    if (exact) return location.pathname === path
+    return location.pathname.startsWith(path)
+  }
 
   return (
     <aside className="w-64 flex flex-col border-r border-surface-border bg-surface flex-shrink-0">
@@ -82,16 +88,24 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ icon: Icon, label, path }) => (
-          <button
-            key={label}
-            onClick={() => navigate(path)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-surface-hover transition-all duration-150"
-          >
-            <Icon size={16} className="flex-shrink-0" />
-            {label}
-          </button>
-        ))}
+        {navItems.map(({ icon: Icon, label, path, exact }) => {
+          const active = isActive(path, exact)
+          return (
+            <button
+              key={label}
+              onClick={() => navigate(path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                active
+                  ? 'bg-primary/20 text-white border border-primary/20'
+                  : 'text-slate-400 hover:text-white hover:bg-surface-hover border border-transparent'
+              }`}
+            >
+              <Icon size={16} className={`flex-shrink-0 ${active ? 'text-primary-light' : ''}`} />
+              {label}
+              {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-light"></span>}
+            </button>
+          )
+        })}
       </nav>
 
       {/* Footer */}

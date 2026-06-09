@@ -33,12 +33,8 @@ router.get('/gym', async (req, res) => {
     if (ms.locked > 0)         flags.push({ severity: 'critical', message: `${ms.locked} member account${ms.locked > 1 ? 's' : ''} locked due to repeated payment failures.` });
     if (ps.successRate < 95)   flags.push({ severity: 'warning',  message: `DD success rate dropped to ${ps.successRate}% — below the 95% industry benchmark.` });
 
-    let aiInsight = null;
-    if (process.env.ANTHROPIC_API_KEY) {
-      aiInsight = await getClaudeGymInsight(ms, mc, ps, flags);
-    } else {
-      aiInsight = buildAdminInsight(ms, mc, ps, flags);
-    }
+    let aiInsight = await getOllamaGymInsight(ms, mc, ps, flags);
+    if (!aiInsight) aiInsight = buildAdminInsight(ms, mc, ps, flags);
 
     res.json({ kpis, flags, aiInsight });
   } catch (err) {
@@ -60,19 +56,13 @@ function buildAdminInsight(ms, mc, ps, flags) {
   return parts.join(' ');
 }
 
-async function getClaudeGymInsight(ms, mc, ps, flags) {
-  const Anthropic = require('@anthropic-ai/sdk');
-  const client = new Anthropic();
+async function getOllamaGymInsight(ms, mc, ps, flags) {
+  const { callLLM } = require('../llm');
   const context = `Active members: ${ms.active}, Defaulted: ${ms.defaulted}, Locked: ${ms.locked}, Machine uptime: ${mc.uptime}%, DD success rate: ${ps.successRate}%, Monthly revenue: £${ps.totalRevenue.toFixed(2)}. Flags: ${flags.map(f => f.message).join('; ')}`;
-  const msg = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 200,
-    messages: [{
-      role: 'user',
-      content: `You are the AI business intelligence engine for FitZone Elite gym (UK). Provide a concise 2-sentence executive summary and top priority action for the gym admin based on: ${context}`,
-    }],
-  });
-  return msg.content[0].text;
+  return callLLM(
+    `You are the AI business intelligence engine for FitZone Elite gym (UK). Provide a concise 2-sentence executive summary and top priority action for the gym admin based on: ${context}`,
+    180
+  );
 }
 
 module.exports = router;

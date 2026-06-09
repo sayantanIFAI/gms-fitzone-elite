@@ -25,12 +25,8 @@ router.get('/:memberId', async (req, res) => {
     const churnScore = computeChurnScore(stats);
     const insights   = buildInsights(member, stats, vitals, records, attended, churnScore);
 
-    let aiMessage = null;
-    if (process.env.ANTHROPIC_API_KEY) {
-      aiMessage = await getClaudeRec(member, stats, vitals, records, churnScore);
-    } else {
-      aiMessage = buildRuleRec(member, stats, vitals, records, churnScore);
-    }
+    let aiMessage = await getOllamaRec(member, stats, vitals, records, churnScore);
+    if (!aiMessage) aiMessage = buildRuleRec(member, stats, vitals, records, churnScore);
 
     res.json({ insights, aiMessage, churnScore, riskLevel: churnScore >= 75 ? 'high' : churnScore >= 40 ? 'medium' : 'low' });
   } catch (err) {
@@ -87,26 +83,13 @@ function buildRuleRec(member, stats, vitals, records, churnScore) {
   return `${firstName}, you're showing great consistency. Keep up your current schedule and consider adding a stretching or yoga session to support recovery.`;
 }
 
-async function getClaudeRec(member, stats, vitals, records, churnScore) {
-  const Anthropic = require('@anthropic-ai/sdk');
-  const client = new Anthropic();
-  const context = `
-Member: ${member.name} (${member.membership_type} membership)
-Last 14 days visits: ${stats.last14Days}, Previous 14 days: ${stats.prev14Days}
-Avg cardio: ${vitals?.avg_cardio_mins || 'N/A'} mins, Avg HR: ${vitals?.avg_hr || 'N/A'} bpm
-Personal bests: ${records.map(r => `${r.exercise}: ${r.weight_kg}kg`).join(', ') || 'None logged'}
-Churn risk: ${churnScore}%
-  `.trim();
-
-  const msg = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 200,
-    messages: [{
-      role: 'user',
-      content: `You are FitZone Elite's AI fitness coach. Write a warm, personal, 2-sentence motivational message for this member:\n\n${context}`,
-    }],
-  });
-  return msg.content[0].text;
+async function getOllamaRec(member, stats, vitals, records, churnScore) {
+  const { callLLM } = require('../llm');
+  const context = `Member: ${member.name} (${member.membership_type}). Visits last 14 days: ${stats.last14Days}, prior 14 days: ${stats.prev14Days}. Avg cardio: ${vitals?.avg_cardio_mins || 'N/A'} mins. PBs: ${records.map(r => `${r.exercise} ${r.weight_kg}kg`).join(', ') || 'none'}. Churn risk: ${churnScore}%.`;
+  return callLLM(
+    `You are FitZone Elite's AI fitness coach. Write a warm, personal, 2-sentence motivational message for this gym member:\n\n${context}`,
+    180
+  );
 }
 
 module.exports = router;

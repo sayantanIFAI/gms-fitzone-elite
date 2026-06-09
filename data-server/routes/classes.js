@@ -29,13 +29,37 @@ router.get('/upcoming', (req, res) => {
   `).all());
 });
 
-// GET /api/classes/member/:memberId – member's bookings
+// GET /api/classes/booking-counts?startDate=X&endDate=Y – booked count per class per date
+router.get('/booking-counts', (req, res) => {
+  const { startDate, endDate } = req.query;
+  if (!startDate || !endDate) return res.json([]);
+  const db = getDB();
+  res.json(db.prepare(`
+    SELECT class_id, booking_date, COUNT(*) as booked_count
+    FROM class_bookings
+    WHERE booking_date >= ? AND booking_date <= ?
+      AND status IN ('booked','attended')
+    GROUP BY class_id, booking_date
+  `).all(startDate, endDate));
+});
+
+// DELETE /api/classes/booking/:bookingId – cancel a booking
+router.delete('/booking/:bookingId', (req, res) => {
+  const db = getDB();
+  const booking = db.prepare('SELECT * FROM class_bookings WHERE id = ?').get(req.params.bookingId);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  if (booking.status === 'attended') return res.status(409).json({ error: 'Cannot cancel an attended session' });
+  db.prepare('DELETE FROM class_bookings WHERE id = ?').run(req.params.bookingId);
+  res.json({ success: true });
+});
+
+// GET /api/classes/member/:memberId – member's bookings (supports ?startDate=&endDate=&status=)
 router.get('/member/:memberId', (req, res) => {
   const db = getDB();
-  const { status } = req.query;
+  const { status, startDate, endDate } = req.query;
   let query = `
     SELECT cb.*, c.name as class_name, c.schedule_time, c.schedule_days,
-           c.color, c.duration_minutes, c.location, c.category,
+           c.color, c.duration_minutes, c.location, c.category, c.capacity,
            m.name as trainer_name
     FROM class_bookings cb
     JOIN classes c ON cb.class_id = c.id
@@ -43,7 +67,9 @@ router.get('/member/:memberId', (req, res) => {
     WHERE cb.member_id = ?
   `;
   const params = [req.params.memberId];
-  if (status) { query += ' AND cb.status = ?'; params.push(status); }
+  if (status)    { query += ' AND cb.status = ?';       params.push(status); }
+  if (startDate) { query += ' AND cb.booking_date >= ?'; params.push(startDate); }
+  if (endDate)   { query += ' AND cb.booking_date <= ?'; params.push(endDate); }
   query += ' ORDER BY cb.booking_date DESC';
   res.json(db.prepare(query).all(...params));
 });

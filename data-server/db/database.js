@@ -144,6 +144,18 @@ function initDB() {
     );
   `);
 
+  // Schema migrations — safe to run on existing DB
+  const migrations = [
+    "ALTER TABLE vitals ADD COLUMN vo2_max REAL",
+    "ALTER TABLE vitals ADD COLUMN spo2 INTEGER",
+    "ALTER TABLE personal_records ADD COLUMN distance_km REAL",
+    "ALTER TABLE personal_records ADD COLUMN duration_seconds INTEGER",
+    "ALTER TABLE personal_records ADD COLUMN machine_type TEXT DEFAULT 'analog'",
+  ];
+  for (const sql of migrations) {
+    try { db.exec(sql); } catch { /* column already exists — skip */ }
+  }
+
   const count = db.prepare('SELECT COUNT(*) as cnt FROM members').get();
   if (count.cnt === 0) {
     seedDatabase(db);

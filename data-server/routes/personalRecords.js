@@ -44,10 +44,20 @@ router.get('/:memberId/exercise/:exercise', (req, res) => {
 // POST /api/records/:memberId
 router.post('/:memberId', (req, res) => {
   const db = getDB();
-  const { exercise, weight_kg, reps, notes } = req.body;
+  const { exercise, weight_kg, reps, notes, distance_km, duration_seconds, machine_type } = req.body;
+  if (!exercise) return res.status(400).json({ error: 'exercise is required' });
   const id = uuid();
-  db.prepare('INSERT INTO personal_records (id,member_id,exercise,weight_kg,reps,recorded_at,notes) VALUES (?,?,?,?,?,?,?)')
-    .run(id, req.params.memberId, exercise, weight_kg, reps, new Date().toISOString(), notes || null);
+  db.prepare(`
+    INSERT INTO personal_records
+      (id,member_id,exercise,weight_kg,reps,recorded_at,notes,distance_km,duration_seconds,machine_type)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    id, req.params.memberId, exercise,
+    weight_kg ?? null, reps ?? null,
+    new Date().toISOString(), notes ?? null,
+    distance_km ?? null, duration_seconds ?? null,
+    machine_type ?? 'analog'
+  );
   res.json({ id, success: true });
 });
 

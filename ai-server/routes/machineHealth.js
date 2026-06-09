@@ -49,11 +49,8 @@ router.get('/', async (req, res) => {
     });
 
     let aiInsight = null;
-    if (process.env.ANTHROPIC_API_KEY && alerts.length > 0) {
-      aiInsight = await getClaudeMachineInsight(alerts, stats);
-    } else {
-      aiInsight = buildRuleInsight(alerts, stats);
-    }
+    if (alerts.length > 0) aiInsight = await getOllamaMachineInsight(alerts, stats);
+    if (!aiInsight) aiInsight = buildRuleInsight(alerts, stats);
 
     res.json({ stats, alerts, recommendations, aiInsight, machines });
   } catch (err) {
@@ -82,19 +79,13 @@ function buildRuleInsight(alerts, stats) {
   return parts.join(' ');
 }
 
-async function getClaudeMachineInsight(alerts, stats) {
-  const Anthropic = require('@anthropic-ai/sdk');
-  const client = new Anthropic();
+async function getOllamaMachineInsight(alerts, stats) {
+  const { callLLM } = require('../llm');
   const alertSummary = alerts.map(a => `${a.name}: ${a.severity} – ${a.message}`).join('\n');
-  const msg = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 250,
-    messages: [{
-      role: 'user',
-      content: `You are the AI maintenance coordinator for FitZone Elite gym (UK). Fleet uptime: ${stats.uptime}%. Alerts:\n${alertSummary}\n\nProvide a 2-sentence prioritised maintenance recommendation for the gym admin.`,
-    }],
-  });
-  return msg.content[0].text;
+  return callLLM(
+    `You are the AI maintenance coordinator for FitZone Elite gym (UK). Fleet uptime: ${stats.uptime}%. Alerts:\n${alertSummary}\n\nProvide a 2-sentence prioritised maintenance recommendation for the gym admin.`,
+    200
+  );
 }
 
 module.exports = router;

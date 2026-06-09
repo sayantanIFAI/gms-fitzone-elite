@@ -48,13 +48,12 @@ router.get('/', async (req, res) => {
       .filter(m => m.churnScore >= 30)
       .sort((a, b) => b.churnScore - a.churnScore);
 
-    // Optional: enhance with Claude
+    // Enhance with local LLM (Ollama) if available, else rule-based
     let aiInsight = null;
-    if (process.env.ANTHROPIC_API_KEY && atRisk.length > 0) {
-      aiInsight = await getClaudeChurnInsight(atRisk);
-    } else {
-      aiInsight = generateRuleBasedInsight(atRisk);
+    if (atRisk.length > 0) {
+      aiInsight = await getOllamaChurnInsight(atRisk);
     }
+    if (!aiInsight) aiInsight = generateRuleBasedInsight(atRisk);
 
     res.json({ atRisk, aiInsight, total: atRisk.length });
   } catch (err) {
@@ -111,22 +110,15 @@ function generateRuleBasedInsight(atRisk) {
   return parts.join(' ');
 }
 
-async function getClaudeChurnInsight(atRisk) {
-  const Anthropic = require('@anthropic-ai/sdk');
-  const client = new Anthropic();
+async function getOllamaChurnInsight(atRisk) {
+  const { callLLM } = require('../llm');
   const summary = atRisk.slice(0, 5).map(m =>
-    `${m.name}: ${m.last14Days} visits in last 14 days vs ${m.prev14Days} in prior 14 days. Risk score: ${m.churnScore}%.`
+    `${m.name}: ${m.last14Days} visits last 14 days vs ${m.prev14Days} prior. Risk score: ${m.churnScore}%.`
   ).join('\n');
-
-  const msg = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 300,
-    messages: [{
-      role: 'user',
-      content: `You are a gym retention specialist AI for FitZone Elite (UK). Analyse these at-risk members and give a concise 2-3 sentence action recommendation for the trainer:\n\n${summary}`,
-    }],
-  });
-  return msg.content[0].text;
+  return callLLM(
+    `You are a gym retention specialist for FitZone Elite (UK). Analyse these at-risk members and give a concise 2-3 sentence action recommendation for the trainer:\n\n${summary}`,
+    200
+  );
 }
 
 module.exports = router;

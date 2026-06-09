@@ -186,47 +186,56 @@ function seedDatabase(db) {
     insertBooking.run(uuid(), 'cls_001', 'mem_011', d, 'attended', dt(d, 6, 55)));
 
   // ─── JIM'S VITALS ──────────────────────────────────────────────────────────
-  const insertVital = db.prepare(`INSERT INTO vitals (id,member_id,recorded_at,heart_rate_avg,heart_rate_max,calories_burned,cardio_duration_minutes,steps) VALUES (?,?,?,?,?,?,?,?)`);
+  const insertVital = db.prepare(`INSERT INTO vitals (id,member_id,recorded_at,heart_rate_avg,heart_rate_max,calories_burned,cardio_duration_minutes,steps,vo2_max,spo2) VALUES (?,?,?,?,?,?,?,?,?,?)`);
 
   const jimVitals = [
-    { date: '2026-03-13', hr_avg: 142, hr_max: 168, cal: 380, cardio: 32, steps: 7800 },
-    { date: '2026-03-20', hr_avg: 145, hr_max: 172, cal: 410, cardio: 35, steps: 8200 },
-    { date: '2026-03-27', hr_avg: 139, hr_max: 165, cal: 360, cardio: 30, steps: 7400 },
-    { date: '2026-04-03', hr_avg: 148, hr_max: 174, cal: 430, cardio: 38, steps: 8600 },
-    { date: '2026-04-11', hr_avg: 151, hr_max: 178, cal: 455, cardio: 40, steps: 9100 },
-    { date: '2026-04-18', hr_avg: 147, hr_max: 171, cal: 420, cardio: 36, steps: 8400 },
-    { date: '2026-04-25', hr_avg: 153, hr_max: 180, cal: 468, cardio: 42, steps: 9400 },
-    { date: '2026-05-02', hr_avg: 149, hr_max: 176, cal: 440, cardio: 39, steps: 8800 },
-    { date: '2026-05-09', hr_avg: 155, hr_max: 182, cal: 475, cardio: 43, steps: 9600 },
-    { date: '2026-05-16', hr_avg: 152, hr_max: 179, cal: 460, cardio: 41, steps: 9200 },
-    { date: '2026-05-23', hr_avg: 150, hr_max: 177, cal: 448, cardio: 40, steps: 9000 },
+    { date: '2026-03-13', hr_avg: 142, hr_max: 168, cal: 380, cardio: 32, steps: 7800, vo2: 42.8, spo2: 97 },
+    { date: '2026-03-20', hr_avg: 145, hr_max: 172, cal: 410, cardio: 35, steps: 8200, vo2: 43.1, spo2: 97 },
+    { date: '2026-03-27', hr_avg: 139, hr_max: 165, cal: 360, cardio: 30, steps: 7400, vo2: 43.5, spo2: 98 },
+    { date: '2026-04-03', hr_avg: 148, hr_max: 174, cal: 430, cardio: 38, steps: 8600, vo2: 44.2, spo2: 96 },
+    { date: '2026-04-11', hr_avg: 151, hr_max: 178, cal: 455, cardio: 40, steps: 9100, vo2: 44.8, spo2: 97 },
+    { date: '2026-04-18', hr_avg: 147, hr_max: 171, cal: 420, cardio: 36, steps: 8400, vo2: 45.2, spo2: 97 },
+    { date: '2026-04-25', hr_avg: 153, hr_max: 180, cal: 468, cardio: 42, steps: 9400, vo2: 45.6, spo2: 96 },
+    { date: '2026-05-02', hr_avg: 149, hr_max: 176, cal: 440, cardio: 39, steps: 8800, vo2: 46.1, spo2: 97 },
+    { date: '2026-05-09', hr_avg: 155, hr_max: 182, cal: 475, cardio: 43, steps: 9600, vo2: 46.7, spo2: 96 },
+    { date: '2026-05-16', hr_avg: 152, hr_max: 179, cal: 460, cardio: 41, steps: 9200, vo2: 47.1, spo2: 97 },
+    { date: '2026-05-23', hr_avg: 150, hr_max: 177, cal: 448, cardio: 40, steps: 9000, vo2: 47.5, spo2: 98 },
   ];
-  jimVitals.forEach(v => insertVital.run(uuid(), 'mem_001', dt(v.date, 8), v.hr_avg, v.hr_max, v.cal, v.cardio, v.steps));
+  jimVitals.forEach(v => insertVital.run(uuid(), 'mem_001', dt(v.date, 8), v.hr_avg, v.hr_max, v.cal, v.cardio, v.steps, v.vo2, v.spo2));
 
   // ─── JIM'S PERSONAL RECORDS ────────────────────────────────────────────────
-  const insertPR = db.prepare(`INSERT INTO personal_records (id,member_id,exercise,weight_kg,reps,recorded_at,notes) VALUES (?,?,?,?,?,?,?)`);
+  const insertPR = db.prepare(`INSERT INTO personal_records (id,member_id,exercise,weight_kg,reps,recorded_at,notes,distance_km,duration_seconds,machine_type) VALUES (?,?,?,?,?,?,?,?,?,?)`);
 
   const jimPRs = [
-    // Bench Press progression
-    { exercise: 'Bench Press', weight: 80.0, reps: 5, date: '2026-03-14', notes: 'Solid form, felt strong' },
-    { exercise: 'Bench Press', weight: 82.5, reps: 5, date: '2026-04-04', notes: 'New PR – consistency paying off' },
-    { exercise: 'Bench Press', weight: 85.0, reps: 5, date: '2026-04-18', notes: 'Clean reps, no spotter needed' },
-    { exercise: 'Bench Press', weight: 87.5, reps: 4, date: '2026-05-02', notes: '4 clean reps at 87.5 – close!' },
-    { exercise: 'Bench Press', weight: 90.0, reps: 3, date: '2026-05-23', notes: '🏆 New all-time PR – 90kg!' },
-    // Squat progression
-    { exercise: 'Back Squat',  weight: 100.0, reps: 5, date: '2026-03-20', notes: 'Good depth' },
-    { exercise: 'Back Squat',  weight: 105.0, reps: 5, date: '2026-04-10', notes: 'Form check passed' },
-    { exercise: 'Back Squat',  weight: 110.0, reps: 5, date: '2026-04-24', notes: 'Belt used, great session' },
-    { exercise: 'Back Squat',  weight: 115.0, reps: 4, date: '2026-05-08', notes: 'PR depth and weight' },
-    { exercise: 'Back Squat',  weight: 120.0, reps: 3, date: '2026-05-22', notes: '🏆 120kg milestone!' },
-    // Deadlift progression
-    { exercise: 'Deadlift',    weight: 120.0, reps: 5, date: '2026-03-27', notes: 'Mixed grip, clean pull' },
-    { exercise: 'Deadlift',    weight: 125.0, reps: 5, date: '2026-04-17', notes: 'Double overhand, solid' },
-    { exercise: 'Deadlift',    weight: 130.0, reps: 4, date: '2026-04-30', notes: 'New PR territory' },
-    { exercise: 'Deadlift',    weight: 135.0, reps: 3, date: '2026-05-14', notes: 'Felt explosive' },
-    { exercise: 'Deadlift',    weight: 140.0, reps: 2, date: '2026-05-23', notes: '🏆 140kg – best ever!' },
+    // Bench Press progression (analog)
+    { exercise: 'Bench Press', weight: 80.0, reps: 5, date: '2026-03-14', notes: 'Solid form, felt strong',          dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Bench Press', weight: 82.5, reps: 5, date: '2026-04-04', notes: 'New PR – consistency paying off',  dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Bench Press', weight: 85.0, reps: 5, date: '2026-04-18', notes: 'Clean reps, no spotter needed',    dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Bench Press', weight: 87.5, reps: 4, date: '2026-05-02', notes: '4 clean reps at 87.5 – close!',   dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Bench Press', weight: 90.0, reps: 3, date: '2026-05-23', notes: '🏆 New all-time PR – 90kg!',      dist: null, secs: null, mtype: 'analog' },
+    // Back Squat progression (analog)
+    { exercise: 'Back Squat',  weight: 100.0, reps: 5, date: '2026-03-20', notes: 'Good depth',                     dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Back Squat',  weight: 105.0, reps: 5, date: '2026-04-10', notes: 'Form check passed',              dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Back Squat',  weight: 110.0, reps: 5, date: '2026-04-24', notes: 'Belt used, great session',       dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Back Squat',  weight: 115.0, reps: 4, date: '2026-05-08', notes: 'PR depth and weight',            dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Back Squat',  weight: 120.0, reps: 3, date: '2026-05-22', notes: '🏆 120kg milestone!',            dist: null, secs: null, mtype: 'analog' },
+    // Deadlift progression (analog)
+    { exercise: 'Deadlift',    weight: 120.0, reps: 5, date: '2026-03-27', notes: 'Mixed grip, clean pull',         dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Deadlift',    weight: 125.0, reps: 5, date: '2026-04-17', notes: 'Double overhand, solid',         dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Deadlift',    weight: 130.0, reps: 4, date: '2026-04-30', notes: 'New PR territory',               dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Deadlift',    weight: 135.0, reps: 3, date: '2026-05-14', notes: 'Felt explosive',                 dist: null, secs: null, mtype: 'analog' },
+    { exercise: 'Deadlift',    weight: 140.0, reps: 2, date: '2026-05-23', notes: '🏆 140kg – best ever!',          dist: null, secs: null, mtype: 'analog' },
+    // Treadmill 5km runs (digital) – improving times
+    { exercise: 'Treadmill 5km', weight: null, reps: null, date: '2026-03-15', notes: 'First timed 5km',            dist: 5.0, secs: 1740, mtype: 'digital' }, // 29:00
+    { exercise: 'Treadmill 5km', weight: null, reps: null, date: '2026-04-05', notes: 'Shaved a minute off!',       dist: 5.0, secs: 1680, mtype: 'digital' }, // 28:00
+    { exercise: 'Treadmill 5km', weight: null, reps: null, date: '2026-04-19', notes: 'Consistent pace throughout', dist: 5.0, secs: 1650, mtype: 'digital' }, // 27:30
+    { exercise: 'Treadmill 5km', weight: null, reps: null, date: '2026-05-03', notes: 'Near-perfect pacing',        dist: 5.0, secs: 1590, mtype: 'digital' }, // 26:30
+    { exercise: 'Treadmill 5km', weight: null, reps: null, date: '2026-05-17', notes: '🏆 New PB – sub 26 min!',   dist: 5.0, secs: 1548, mtype: 'digital' }, // 25:48
+    // Stationary Bike 10km (digital)
+    { exercise: 'Stationary Bike 10km', weight: null, reps: null, date: '2026-04-10', notes: 'First timed 10km',   dist: 10.0, secs: 1260, mtype: 'digital' }, // 21:00
+    { exercise: 'Stationary Bike 10km', weight: null, reps: null, date: '2026-05-08', notes: '🏆 New PB – 20:15!', dist: 10.0, secs: 1215, mtype: 'digital' }, // 20:15
   ];
-  jimPRs.forEach(r => insertPR.run(uuid(), 'mem_001', r.exercise, r.weight, r.reps, dt(r.date, 8), r.notes));
+  jimPRs.forEach(r => insertPR.run(uuid(), 'mem_001', r.exercise, r.weight, r.reps, dt(r.date, 8), r.notes, r.dist, r.secs, r.mtype));
 
   // ─── PAYMENTS ──────────────────────────────────────────────────────────────
   const insertPayment = db.prepare(`INSERT INTO payments (id,member_id,amount,currency,due_date,paid_date,status,failure_code,failure_reason,attempts,mandate_ref) VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
